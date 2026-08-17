@@ -11,6 +11,11 @@ const io = socketIo(server, {
   }
 });
 
+// Health check для Railway
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Хранилище комнат
 const rooms = {};
 
@@ -65,7 +70,6 @@ function reconnectPlayer(roomCode, playerName, socketId, callback) {
     const currentPlayer = room.players.find(p => p.id === currentPlayerId);
     
     if (currentPlayerId === socketId) {
-      // Отправляем ход текущему игроку
       const lastAnswer = room.answers.length > 0 ? room.answers[room.answers.length - 1] : null;
       io.to(socketId).emit('yourTurn', {
         isFirst: room.answers.length === 0,
@@ -262,7 +266,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// HTML-страница
+// HTML-страница (клиентская часть)
 const html = `
 <!DOCTYPE html>
 <html lang="ru">
@@ -508,12 +512,18 @@ const html = `
 </html>
 `;
 
-// Отдаём HTML
+// Отдаём HTML по основному маршруту
 app.get('/', (req, res) => {
   res.send(html);
 });
 
+// Запуск сервера
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Сервер запущен на http://localhost:${PORT}`);
+});
+
+// Обработка ошибок сервера, чтобы процесс не падал молча
+server.on('error', (err) => {
+  console.error('Ошибка сервера:', err);
 });
